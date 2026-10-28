@@ -70,6 +70,13 @@ Node *heap_extract_min(MinHeap *heap) {
     return ret;
 }
 
+int heap_find(MinHeap *heap, int x, int y) {
+    for (int i = 0; i < heap -> size; i++) {
+        if (heap -> data[i] -> x == x && heap -> data[i] -> y == y) return i;
+    }
+    return -1;
+}
+
 int main() {
 
 }
