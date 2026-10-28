@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <stdbool.h>
 #include "assg.h"
 
 #define HEAP_CAPACITY 100
@@ -70,11 +71,27 @@ Node *heap_extract_min(MinHeap *heap) {
     return ret;
 }
 
-int heap_find(MinHeap *heap, int x, int y) {
+int heap_find(const MinHeap *heap, int x, int y) {
     for (int i = 0; i < heap -> size; i++) {
         if (heap -> data[i] -> x == x && heap -> data[i] -> y == y) return i;
     }
     return -1;
+}
+
+bool heap_is_empty(const MinHeap *heap) {
+    return heap -> size == 0;
+}
+
+void heap_decrease_key(MinHeap *heap, int index, int new_g, int new_h) {
+    Node *node = heap -> data[index];
+    node -> g = new_g;
+    node -> h = new_h;
+    heapify_up(heap, index);
+}
+
+void heap_free(MinHeap *heap) {
+    for (int i = 0; i < heap -> size; i++) free(heap -> data[i]);
+    free(heap);
 }
 
 int main() {
