@@ -57,6 +57,19 @@ void heapify_down(MinHeap *heap, int index) {
     }
 }
 
+void heap_insert(MinHeap *heap, Node *node) {
+    if (heap -> size == heap -> capacity) return;
+    heap -> data[heap -> size] = node;
+    heapify_up(heap, (heap -> size)++);
+}
+
+Node *heap_extract_min(MinHeap *heap) {
+    Node *ret = heap -> data[0];
+    swap_nodes(heap, 0, (heap -> size)--);
+    heapify_down(heap, 0);
+    return ret;
+}
+
 int main() {
 
 }
