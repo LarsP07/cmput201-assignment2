@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include <stdbool.h>
 #include "assg.h"
 
@@ -91,6 +92,7 @@ void heap_decrease_key(MinHeap *heap, int index, int new_g, int new_h) {
 
 void heap_free(MinHeap *heap) {
     for (int i = 0; i < heap -> size; i++) free(heap -> data[i]);
+    free(heap->data);
     free(heap);
 }
 
@@ -117,9 +119,32 @@ bool closed_list_contains(const ClosedList *list, int x, int y) {
 void closed_list_free(ClosedList *list) {
     for (int i = 0; i < list -> size; i++) free(list -> data[i]);
     free(list -> data);
+    free(list->data);
     free(list);
 }
 
-int main() {
+int main(int argc, char **argv)
+{
+    MinHeap *openList;
+    ClosedList *closedList;
 
+    heap_init(openList);
+    closed_list_init(closedList);
+
+    FILE *f;
+    char path[100];
+    sprintf(path, "Testcases/Milestone Test Cases/%s", argv[1]);
+    f = fopen(path, "r");
+
+    char line[100];
+    while (fgets(line, 100, f)) {
+        printf("%s", line);
+    }
+
+    printf("\n");
+
+    heap_free(openList);
+    closed_list_free(closedList);
+
+    fclose(f);
 }
