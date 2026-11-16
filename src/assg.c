@@ -9,7 +9,9 @@ int compare_nodes(MinHeap *heap, int index1, int index2) {
     // Returns 1 if node A has priority, 0 if node B has priority.
     Node *a = heap -> data[index1], *b = heap -> data[index2];
 
-    if ((a -> g) + (a -> h) != (b -> g) + (b -> h)) return (a -> g) + (a -> h) < (b -> g) + (b -> h);
+    int af = (a -> g) + (a -> h), bf = (b -> g) + (b -> h);
+
+    if (af != bf) return af < bf;
     else if (a -> h != b -> h) return a -> h < b -> h;
     else if (a -> x != b -> x) return a -> x < b -> x;
     else return a -> y < b -> y;
@@ -19,6 +21,18 @@ void swap_nodes(MinHeap *heap, int index1, int index2) {
     Node *temp = heap -> data[index1];
     heap -> data[index1] = heap -> data[index2];
     heap -> data[index2] = temp;
+
+    Node *n1 = heap -> data[index1], *n2 = heap -> data[index2];
+    temp = n1 -> parent;
+    n1 -> parent = n2 -> parent;
+    n2 -> parent = temp;
+
+    if (2*index1 + 1 < heap -> size) heap -> data[2*index1 + 1] -> parent = n1;
+    if (2*index1 + 2 < heap -> size) heap -> data[2*index1 + 2] -> parent = n1;
+    if (2*index2 + 1 < heap -> size) heap -> data[2*index2 + 1] -> parent = n2;
+    if (2*index2 + 2 < heap -> size) heap -> data[2*index2 + 2] -> parent = n2;
+
+    printf("Swapped nodes %d, %d\n", index1, index2);
 }
 
 Node *create_node(int x, int y, int g, int h, Node *parent) {
@@ -37,10 +51,9 @@ void heap_init(MinHeap *heap) {
     heap -> capacity = HEAP_CAPACITY;
 }
 
-void heapify_up(MinHeap *heap, int index) {
-    int i = index;
-    while (i > 0 && heap -> data[(i - 1) / 2] > heap -> data[i]) {
-        int pi = (i - 1) / 2;
+void heapify_up(MinHeap *heap, int i) {
+    int pi;
+    while (i > 0 && compare_nodes(heap, i, pi = (i - 1) / 2)) {
         swap_nodes(heap, i, pi);
         i = pi;
     }
@@ -62,7 +75,8 @@ void heapify_down(MinHeap *heap, int index) {
 void heap_insert(MinHeap *heap, Node *node) {
     if (heap -> size == heap -> capacity) return;
     heap -> data[heap -> size] = node;
-    heapify_up(heap, (heap -> size)++);
+    node -> parent = heap -> data[(heap -> size) / 2];
+    heapify_up(heap, heap -> size++);
 }
 
 Node *heap_extract_min(MinHeap *heap) {
@@ -92,7 +106,7 @@ void heap_decrease_key(MinHeap *heap, int index, int new_g, int new_h) {
 
 void heap_free(MinHeap *heap) {
     for (int i = 0; i < heap -> size; i++) free(heap -> data[i]);
-    free(heap->data);
+    free(heap -> data);
     free(heap);
 }
 
@@ -119,14 +133,46 @@ bool closed_list_contains(const ClosedList *list, int x, int y) {
 void closed_list_free(ClosedList *list) {
     for (int i = 0; i < list -> size; i++) free(list -> data[i]);
     free(list -> data);
-    free(list->data);
     free(list);
 }
 
-int main(int argc, char **argv)
-{
-    MinHeap *openList;
-    ClosedList *closedList;
+void initialInserts(FILE *f, MinHeap *openList) {
+    char line[100];
+    fgets(line, sizeof(line), f);
+    int x, y, g, h;
+    while (1) {
+        fgets(line, sizeof(line), f);
+        if (!sscanf(line, "%d, %d, %d, %d", &x, &y, &g, &h)) break;
+        heap_insert(openList, create_node(x, y, g, h, openList -> data[openList -> size / 2]));
+    }
+}
+
+int is_valid_heap(MinHeap *heap) {
+    for (int i = 1; i < heap -> size; i++) {
+        if (compare_nodes(heap, i, (i - 1) / 2)) return 0;
+    }
+    return 1;
+}
+
+void print_heap(MinHeap *heap, int index, unsigned int depth) {
+    if (index >= heap -> size) return;
+    Node *node = heap -> data[index];
+    char indent[100];
+    for (int i = 0; i < depth; i++) {
+        indent[2*i] = ' ';
+        indent[2*i + 1] = ' ';
+    }
+    indent[2*depth] = '\0';
+    printf("%sNode %d: %d, %d, %d, %d\n", indent, index, node -> g + node -> h, node -> h, node -> x, node -> y);
+    printf("%s- Left:\n", indent);
+    print_heap(heap, 2 * index + 1, depth + 1);
+    printf("%s- Right:\n", indent);
+    print_heap(heap, 2 * index + 2, depth + 1);
+}
+
+int main(int argc, char **argv) {
+    MinHeap *openList = (MinHeap*)malloc(sizeof(MinHeap));
+    ClosedList *closedList = (ClosedList*)malloc(sizeof(ClosedList));
 
     heap_init(openList);
     closed_list_init(closedList);
@@ -136,12 +182,7 @@ int main(int argc, char **argv)
     sprintf(path, "Testcases/Milestone Test Cases/%s", argv[1]);
     f = fopen(path, "r");
 
-    char line[100];
-    while (fgets(line, 100, f)) {
-        printf("%s", line);
-    }
-
-    printf("\n");
+    initialInserts(f, openList);
 
     heap_free(openList);
     closed_list_free(closedList);
