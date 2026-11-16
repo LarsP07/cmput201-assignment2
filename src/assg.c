@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include <stdbool.h>
 #include "assg.h"
 
@@ -120,6 +121,28 @@ void closed_list_free(ClosedList *list) {
     free(list);
 }
 
-int main() {
+int main(int argc, char **argv)
+{
+    MinHeap *openList;
+    ClosedList *closedList;
 
+    heap_init(openList);
+    closed_list_init(closedList);
+
+    FILE *f;
+    char path[100];
+    sprintf(path, "Testcases/Milestone Test Cases/%s", argv[1]);
+    f = fopen(path, "r");
+
+    char line[100];
+    while (fgets(line, 100, f)) {
+        printf("%s", line);
+    }
+
+    printf("\n");
+
+    heap_free(openList);
+    closed_list_free(closedList);
+
+    fclose(f);
 }
