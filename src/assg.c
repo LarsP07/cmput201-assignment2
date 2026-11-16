@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
+#include <string.h>
 #include "assg.h"
 
 #define HEAP_CAPACITY 100
@@ -31,8 +32,6 @@ void swap_nodes(MinHeap *heap, int index1, int index2) {
     if (2*index1 + 2 < heap -> size) heap -> data[2*index1 + 2] -> parent = n1;
     if (2*index2 + 1 < heap -> size) heap -> data[2*index2 + 1] -> parent = n2;
     if (2*index2 + 2 < heap -> size) heap -> data[2*index2 + 2] -> parent = n2;
-
-    printf("Swapped nodes %d, %d\n", index1, index2);
 }
 
 Node *create_node(int x, int y, int g, int h, Node *parent) {
@@ -80,9 +79,12 @@ void heap_insert(MinHeap *heap, Node *node) {
 }
 
 Node *heap_extract_min(MinHeap *heap) {
+    if (heap -> size == 0) return NULL;
     Node *ret = heap -> data[0];
-    swap_nodes(heap, 0, (heap -> size)--);
-    heapify_down(heap, 0);
+    if (heap -> size > 1) {
+        swap_nodes(heap, 0, --heap -> size);
+        heapify_down(heap, 0);
+    } else heap -> size = 0;
     return ret;
 }
 
@@ -108,6 +110,29 @@ void heap_free(MinHeap *heap) {
     for (int i = 0; i < heap -> size; i++) free(heap -> data[i]);
     free(heap -> data);
     free(heap);
+}
+
+int is_valid_heap(MinHeap *heap) {
+    for (int i = 1; i < heap -> size; i++) {
+        if (compare_nodes(heap, i, (i - 1) / 2)) return 0;
+    }
+    return 1;
+}
+
+void print_heap(MinHeap *heap, int index, unsigned int depth) {
+    if (index >= heap -> size) return;
+    Node *node = heap -> data[index];
+    char indent[100];
+    for (int i = 0; i < depth; i++) {
+        indent[2*i] = ' ';
+        indent[2*i + 1] = ' ';
+    }
+    indent[2*depth] = '\0';
+    printf("%sNode %d: %d, %d, %d, %d\n", indent, index, node -> g + node -> h, node -> h, node -> x, node -> y);
+    printf("%s- Left:\n", indent);
+    print_heap(heap, 2 * index + 1, depth + 1);
+    printf("%s- Right:\n", indent);
+    print_heap(heap, 2 * index + 2, depth + 1);
 }
 
 void closed_list_init(ClosedList *list) {
@@ -147,27 +172,22 @@ void initialInserts(FILE *f, MinHeap *openList) {
     }
 }
 
-int is_valid_heap(MinHeap *heap) {
-    for (int i = 1; i < heap -> size; i++) {
-        if (compare_nodes(heap, i, (i - 1) / 2)) return 0;
-    }
-    return 1;
-}
+void executeCommands(FILE *input, FILE *output, MinHeap *openList, ClosedList *closedList) {
+    char line[100];
+    fgets(line, sizeof(line), input);
+    fgets(line, sizeof(line), input);
+    char dest, command[50];
+    int arg1, arg2, arg3;
+    while (fgets(line, sizeof(line), input)) {
+        sscanf(line, "[%c] %s %d %d %d", &dest, command, &arg1, &arg2, &arg3);
 
-void print_heap(MinHeap *heap, int index, unsigned int depth) {
-    if (index >= heap -> size) return;
-    Node *node = heap -> data[index];
-    char indent[100];
-    for (int i = 0; i < depth; i++) {
-        indent[2*i] = ' ';
-        indent[2*i + 1] = ' ';
+        if (strcmp(command, "Extract")) {
+            Node *node = heap_extract_min(openList);
+            print_heap(openList, 0, 0);
+            printf("\n");
+            fprintf(output, "Extracted node (%d, %d), f = %d, g = %d, h = %d\n", node -> x, node -> y, node -> g + node -> h, node -> g, node -> h);
+        }
     }
-    indent[2*depth] = '\0';
-    printf("%sNode %d: %d, %d, %d, %d\n", indent, index, node -> g + node -> h, node -> h, node -> x, node -> y);
-    printf("%s- Left:\n", indent);
-    print_heap(heap, 2 * index + 1, depth + 1);
-    printf("%s- Right:\n", indent);
-    print_heap(heap, 2 * index + 2, depth + 1);
 }
 
 int main(int argc, char **argv) {
@@ -177,15 +197,20 @@ int main(int argc, char **argv) {
     heap_init(openList);
     closed_list_init(closedList);
 
-    FILE *f;
+    FILE *input;
     char path[100];
     sprintf(path, "Testcases/Milestone Test Cases/%s", argv[1]);
-    f = fopen(path, "r");
+    input = fopen(path, "r");
 
-    initialInserts(f, openList);
+    FILE *output;
+    output = fopen("output.txt", "w");
+
+    initialInserts(input, openList);
+    executeCommands(input, output, openList, closedList);
 
     heap_free(openList);
     closed_list_free(closedList);
 
-    fclose(f);
+    fclose(input);
+    fclose(output);
 }
