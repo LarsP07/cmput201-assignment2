@@ -94,6 +94,32 @@ void heap_free(MinHeap *heap) {
     free(heap);
 }
 
+void closed_list_init(ClosedList *list) {
+    list -> data = (Node**)malloc(HEAP_CAPACITY * sizeof(Node*));
+    list -> capacity = HEAP_CAPACITY;
+    list -> size = 0;
+}
+
+void closed_list_add(ClosedList *list, Node *node) {
+    if (list -> size == list -> capacity) return;
+    list -> data[list -> size++] = node;
+}
+
+bool closed_list_contains(const ClosedList *list, int x, int y) {
+    Node *node;
+    for (int i = 0; i < list -> size; i++) {
+        node = list -> data[i];
+        if (node -> x = x && node -> y == y) return true;
+    }
+    return false;
+}
+
+void closed_list_free(ClosedList *list) {
+    for (int i = 0; i < list -> size; i++) free(list -> data[i]);
+    free(list -> data);
+    free(list);
+}
+
 int main() {
 
 }
