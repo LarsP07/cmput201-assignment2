@@ -176,16 +176,40 @@ void executeCommands(FILE *input, FILE *output, MinHeap *openList, ClosedList *c
     char line[100];
     fgets(line, sizeof(line), input);
     fgets(line, sizeof(line), input);
-    char dest, command[50];
+    char target, command[50];
     int arg1, arg2, arg3;
     while (fgets(line, sizeof(line), input)) {
-        sscanf(line, "[%c] %s %d %d %d", &dest, command, &arg1, &arg2, &arg3);
+        sscanf(line, "[%c] %s (%d, %d), new_g = %d", &target, command, &arg1, &arg2, &arg3);
 
         if (strcmp(command, "Extract") == 0) {
             Node *node = heap_extract_min(openList);
-            print_heap(openList, 0, 0);
-            printf("\n");
-            fprintf(output, "Extracted node (%d, %d), f = %d, g = %d, h = %d\n", node -> x, node -> y, node -> g + node -> h, node -> g, node -> h);
+            closed_list_add(closedList, node);
+            fprintf(output, "Extracted Node (%d, %d), f = %d, g = %d, h = %d\n", node -> x, node -> y, node -> g + node -> h, node -> g, node -> h);
+        } else if (strcmp(command, "Find") == 0) {
+            bool found = (
+                (target == 'O' && heap_find(openList, arg1, arg2) != -1) ||
+                (target == 'C' && closed_list_contains(closedList, arg1, arg2))
+            );
+
+            fprintf(output, "Node (%d, %d) has%sbeen found\n", arg1, arg2, found ? " " : " not ");
+        } else if (strcmp(command, "IsEmpty") == 0) {
+            bool empty = (
+                (target == 'O' && heap_is_empty(openList)) ||
+                (target == 'C' && closedList -> size == 0)
+            );
+
+            fprintf(output, "%s\n", empty ? "True" : "False");
+        } else if (strcmp(command, "DecreaseKey") == 0) {
+            int index = heap_find(openList, arg1, arg2);
+            Node *node = openList -> data[index];
+            heap_decrease_key(openList, index, arg3, node -> h);
+            fprintf(output, "Decreased key for Node (%d, %d): f = %d, g = %d, h = %d\n",
+                node -> x,
+                node -> y,
+                arg3 + node -> h,
+                arg3,
+                node -> h
+            );
         }
     }
 }
