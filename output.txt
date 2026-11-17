@@ -1,0 +1,5 @@
+Extracted node (1, 4), f = 6, g = 4, h = 2
+Extracted node (3, 1), f = 6, g = 3, h = 3
+Extracted node (3, 3), f = 6, g = 3, h = 3
+Extracted node (5, 5), f = 6, g = 3, h = 3
+Extracted node (2, 8), f = 6, g = 2, h = 4

@@ -181,7 +181,7 @@ void executeCommands(FILE *input, FILE *output, MinHeap *openList, ClosedList *c
     while (fgets(line, sizeof(line), input)) {
         sscanf(line, "[%c] %s %d %d %d", &dest, command, &arg1, &arg2, &arg3);
 
-        if (strcmp(command, "Extract")) {
+        if (strcmp(command, "Extract") == 0) {
             Node *node = heap_extract_min(openList);
             print_heap(openList, 0, 0);
             printf("\n");
