@@ -5,6 +5,7 @@
 #include "assg.h"
 
 #define HEAP_CAPACITY 100
+#define MAX_WALLS 10000
 
 int compare_nodes(MinHeap *heap, int index1, int index2) {
     // Returns 1 if node A has priority, 0 if node B has priority.
@@ -159,6 +160,24 @@ void closed_list_free(ClosedList *list) {
     for (int i = 0; i < list -> size; i++) free(list -> data[i]);
     free(list -> data);
     free(list);
+}
+
+int **generateGrid() {
+    int sx, sy, ex, ey;
+    int minx, maxx, miny, maxy;
+
+    printf("Start:\n");
+    scanf("(%d, %d)", &sx, &sy);
+    printf("End: \n");
+    scanf(" (%d, %d)", &ex, &ey);
+
+    minx = sx < ex ? sx : ex;
+    maxx = sx > ex ? sx : ex;
+    miny = sy < ey ? sy : ey;
+    maxy = sy > ey ? sy : ey;
+
+    int wallsCount = 0;
+    int wallsX[MAX_WALLS], wallsY[MAX_WALLS], wallsW[MAX_WALLS], wallsH[MAX_WALLS];
 }
 
 int main(int argc, char **argv) {
