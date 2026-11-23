@@ -7,9 +7,11 @@
 #define HEAP_CAPACITY 100
 #define MAX_WALLS 10000
 
-typedef struct {
-    int **grid;
-    int x, y, w, h;
+typedef struct _grid {
+    int **walls;
+    int left, right, up, down, width, height;
+    int sx, sy;
+    int ex, ey;
 } Grid;
 
 int compare_nodes(MinHeap *heap, int index1, int index2) {
@@ -78,7 +80,10 @@ void heapify_down(MinHeap *heap, int index) {
 }
 
 void heap_insert(MinHeap *heap, Node *node) {
-    if (heap -> size == heap -> capacity) return;
+    if (heap -> size == heap -> capacity) {
+        heap -> capacity += 10;
+        heap -> data = (Node*)realloc(heap -> data, heap -> capacity * sizeof(Node));
+    }
     heap -> data[heap -> size] = node;
     node -> parent = heap -> data[(heap -> size) / 2];
     heapify_up(heap, heap -> size++);
@@ -91,6 +96,10 @@ Node *heap_extract_min(MinHeap *heap) {
         swap_nodes(heap, 0, --heap -> size);
         heapify_down(heap, 0);
     } else heap -> size = 0;
+    if (heap -> capacity - heap -> size > 100) {
+        heap -> capacity -= 100;
+        heap -> data = (Node*)realloc(heap -> data, heap -> capacity * sizeof(Node));
+    }
     return ret;
 }
 
@@ -148,7 +157,10 @@ void closed_list_init(ClosedList *list) {
 }
 
 void closed_list_add(ClosedList *list, Node *node) {
-    if (list -> size == list -> capacity) return;
+    if (list -> size == list -> capacity) {
+        list -> capacity += 100;
+        list -> data = (Node*)realloc(list -> data, list -> capacity * sizeof(Node));
+    }
     list -> data[list -> size++] = node;
 }
 
@@ -208,9 +220,25 @@ Grid generateGrid() {
         }
     }
 
-    return (Grid){.grid = grid, .x = minX, .y = minY, .w = gridWidth, .h = gridHeight};
+    return (Grid){
+        .walls = grid,
+        .left = minX, .right = maxX, .down = minY, .up = maxY,
+        .width = gridWidth, .height = gridHeight,
+        .sx = sx, .sy = sy,
+        .ex = ex, .ey = ey
+    };
+}
+
+void search(Grid grid) {
+    MinHeap *heap = (MinHeap*)malloc(sizeof(MinHeap));
+    heap_init(heap);
+    heap_insert(heap, create_node(grid.sx, grid.sy, 0, abs(grid.sx - grid.ex) + abs(grid.sy - grid.ey), NULL));
 }
 
 int main(int argc, char **argv) {
     Grid grid = generateGrid();
+    search(grid);
+
+    for (int i = 0; i < grid.width; i++) free(grid.walls[i]);
+    free(grid.walls);
 }
