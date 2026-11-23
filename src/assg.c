@@ -7,6 +7,11 @@
 #define HEAP_CAPACITY 100
 #define MAX_WALLS 10000
 
+typedef struct {
+    int **grid;
+    int x, y, w, h;
+} Grid;
+
 int compare_nodes(MinHeap *heap, int index1, int index2) {
     // Returns 1 if node A has priority, 0 if node B has priority.
     Node *a = heap -> data[index1], *b = heap -> data[index2];
@@ -162,24 +167,50 @@ void closed_list_free(ClosedList *list) {
     free(list);
 }
 
-int **generateGrid() {
+Grid generateGrid() {
     int sx, sy, ex, ey;
-    int minx, maxx, miny, maxy;
 
     printf("Start:\n");
     scanf("(%d, %d)", &sx, &sy);
     printf("End: \n");
     scanf(" (%d, %d)", &ex, &ey);
 
-    minx = sx < ex ? sx : ex;
-    maxx = sx > ex ? sx : ex;
-    miny = sy < ey ? sy : ey;
-    maxy = sy > ey ? sy : ey;
+    int minX = sx < ex ? sx : ex;
+    int maxX = sx > ex ? sx : ex;
+    int minY = sy < ey ? sy : ey;
+    int maxY = sy > ey ? sy : ey;
 
-    int wallsCount = 0;
+    int wallsCount;
     int wallsX[MAX_WALLS], wallsY[MAX_WALLS], wallsW[MAX_WALLS], wallsH[MAX_WALLS];
+    printf("Walls:\n");
+    int x, y, w, h;
+    for (wallsCount = 0; scanf(" (%d, %d), %d, %d", &x, &y, &w, &h); wallsCount++) {
+        wallsX[wallsCount] = x;
+        wallsY[wallsCount] = y;
+        wallsW[wallsCount] = w;
+        wallsH[wallsCount] = h;
+
+        minX = x < minX ? x : minX;
+        maxX = x + w > maxX ? x + w : maxX;
+        minY = y < minY ? y : minY;
+        maxY = y + h > maxY ? y + h : maxY;
+    }
+
+    int gridWidth = maxX - minX, gridHeight = maxY - minY;
+    int **grid = (int**)malloc(gridWidth * sizeof(int*));
+    for (int i = 0; i < gridWidth; i++) grid[i] = (int*)calloc(gridHeight, sizeof(int));
+
+    for (int c = 0; c < wallsCount; c++) {
+        for (int i = wallsX[c]; i < wallsX[c] + wallsW[c]; i++) {
+            for (int j = wallsY[c]; j < wallsY[c] + wallsH[c]; j++) {
+                grid[i - minX][j - minY] = 1;
+            }
+        }
+    }
+
+    return (Grid){.grid = grid, .x = minX, .y = minY, .w = gridWidth, .h = gridHeight};
 }
 
 int main(int argc, char **argv) {
-
+    Grid grid = generateGrid();
 }
