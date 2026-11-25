@@ -170,7 +170,9 @@ bool closed_list_contains(const ClosedList *list, int x, int y) {
     Node *node;
     for (int i = 0; i < list -> size; i++) {
         node = list -> data[i];
-        if (node -> x = x && node -> y == y) return true;
+        if (node -> x == x && node -> y == y) {
+            return true;
+        }
     }
     return false;
 }
@@ -210,7 +212,7 @@ Grid generateGrid() {
         maxY = y + h - 1 > maxY ? y + h - 1 : maxY;
     }
 
-    int gridWidth = maxX - minX, gridHeight = maxY - minY;
+    int gridWidth = maxX - minX + 1, gridHeight = maxY - minY + 1;
     int **grid = (int**)malloc(gridWidth * sizeof(int*));
     for (int i = 0; i < gridWidth; i++) grid[i] = (int*)calloc(gridHeight, sizeof(int));
 
@@ -231,6 +233,11 @@ Grid generateGrid() {
         .sx = sx, .sy = sy,
         .ex = ex, .ey = ey
     };
+}
+
+bool is_wall(Grid grid, int x, int y) {
+    bool ret = grid.walls[x - grid.left][y - grid.bottom];
+    return ret;
 }
 
 void heap_insert_or_update(MinHeap *heap, int x, int y, int g, int h) {
@@ -269,7 +276,7 @@ void pathfind(Grid grid) {
         int x = node -> x, y = node -> y;
 
         // left
-        if (x > grid.left && !grid.walls[x - 1][y] && !closed_list_contains(list, x - 1, y)) heap_insert_or_update(
+        if (x > grid.left && !is_wall(grid, x - 1, y) && !closed_list_contains(list, x - 1, y)) heap_insert_or_update(
             heap,
             x - 1,
             y,
@@ -278,7 +285,7 @@ void pathfind(Grid grid) {
         );
 
         // right
-        if (x < grid.right && !grid.walls[x + 1][y] && !closed_list_contains(list, x + 1, y)) heap_insert_or_update(
+        if (x < grid.right && !is_wall(grid, x + 1, y) && !closed_list_contains(list, x + 1, y)) heap_insert_or_update(
             heap,
             x + 1,
             y,
@@ -287,7 +294,7 @@ void pathfind(Grid grid) {
         );
         
         // top
-        if (y < grid.top && !grid.walls[x][y + 1] && !closed_list_contains(list, x, y + 1)) heap_insert_or_update(
+        if (y < grid.top && !is_wall(grid, x, y + 1) && !closed_list_contains(list, x, y + 1)) heap_insert_or_update(
             heap,
             x,
             y + 1,
@@ -296,15 +303,13 @@ void pathfind(Grid grid) {
         );
 
         // bottom
-        if (y < grid.bottom && !grid.walls[x][y - 1] && !closed_list_contains(list, x, y - 1)) heap_insert_or_update(
+        if (y < grid.bottom && !is_wall(grid, x, y - 1) && !closed_list_contains(list, x, y - 1)) heap_insert_or_update(
             heap,
             x,
             y - 1,
             node -> g + 1,
             abs(x - grid.ex) + abs(y - 1 - grid.ey)
         );
-
-        if (debug) print_heap(heap, 0, 0);
 
         if (heap_is_empty(heap)) {
             printf("F\n");
@@ -317,8 +322,6 @@ void pathfind(Grid grid) {
 }
 
 int main(int argc, char **argv) {
-    if (argc == 2 && strcmp(argv[1], "--debug") == 0) debug = 1;
-
     Grid grid = generateGrid();
     pathfind(grid);
 
