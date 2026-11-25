@@ -7,9 +7,11 @@
 #define HEAP_CAPACITY 100
 #define MAX_WALLS 10000
 
+int debug = 0;
+
 typedef struct _grid {
     int **walls;
-    int left, right, up, down, width, height;
+    int left, right, top, bottom, width, height;
     int sx, sy;
     int ex, ey;
 } Grid;
@@ -82,7 +84,7 @@ void heapify_down(MinHeap *heap, int index) {
 void heap_insert(MinHeap *heap, Node *node) {
     if (heap -> size == heap -> capacity) {
         heap -> capacity += 10;
-        heap -> data = (Node*)realloc(heap -> data, heap -> capacity * sizeof(Node));
+        heap -> data = (Node**)realloc(heap -> data, heap -> capacity * sizeof(Node));
     }
     heap -> data[heap -> size] = node;
     node -> parent = heap -> data[(heap -> size) / 2];
@@ -98,7 +100,7 @@ Node *heap_extract_min(MinHeap *heap) {
     } else heap -> size = 0;
     if (heap -> capacity - heap -> size > 100) {
         heap -> capacity -= 100;
-        heap -> data = (Node*)realloc(heap -> data, heap -> capacity * sizeof(Node));
+        heap -> data = (Node**)realloc(heap -> data, heap -> capacity * sizeof(Node));
     }
     return ret;
 }
@@ -159,7 +161,7 @@ void closed_list_init(ClosedList *list) {
 void closed_list_add(ClosedList *list, Node *node) {
     if (list -> size == list -> capacity) {
         list -> capacity += 100;
-        list -> data = (Node*)realloc(list -> data, list -> capacity * sizeof(Node));
+        list -> data = (Node**)realloc(list -> data, list -> capacity * sizeof(Node));
     }
     list -> data[list -> size++] = node;
 }
@@ -203,9 +205,9 @@ Grid generateGrid() {
         wallsH[wallsCount] = h;
 
         minX = x < minX ? x : minX;
-        maxX = x + w > maxX ? x + w : maxX;
+        maxX = x + w - 1 > maxX ? x + w - 1 : maxX;
         minY = y < minY ? y : minY;
-        maxY = y + h > maxY ? y + h : maxY;
+        maxY = y + h - 1 > maxY ? y + h - 1 : maxY;
     }
 
     int gridWidth = maxX - minX, gridHeight = maxY - minY;
@@ -220,24 +222,105 @@ Grid generateGrid() {
         }
     }
 
+    printf("SW Corner:\n(%d, %d), %d, %d\n", minX, minY, gridWidth, gridHeight);
+
     return (Grid){
         .walls = grid,
-        .left = minX, .right = maxX, .down = minY, .up = maxY,
+        .left = minX, .right = maxX, .bottom = minY, .top = maxY,
         .width = gridWidth, .height = gridHeight,
         .sx = sx, .sy = sy,
         .ex = ex, .ey = ey
     };
 }
 
-void search(Grid grid) {
+void heap_insert_or_update(MinHeap *heap, int x, int y, int g, int h) {
+    int index;
+    if ((index = heap_find(heap, x, y)) == -1) {
+        heap_insert(heap, create_node(x, y, g, h, NULL));
+    } else {
+        heap_decrease_key(heap, index, g, h);
+    }
+}
+
+void pathfind(Grid grid) {
     MinHeap *heap = (MinHeap*)malloc(sizeof(MinHeap));
     heap_init(heap);
-    heap_insert(heap, create_node(grid.sx, grid.sy, 0, abs(grid.sx - grid.ex) + abs(grid.sy - grid.ey), NULL));
+    heap_insert(heap, create_node(
+        grid.sx, grid.sy, 0, abs(grid.sx - grid.ex) + abs(grid.sy - grid.ey), NULL
+    ));
+
+    ClosedList *list = (ClosedList*)malloc(sizeof(ClosedList));
+    closed_list_init(list);
+
+    printf("Start Search:\n");
+
+    while (1) {
+        Node *node = heap_extract_min(heap);
+        closed_list_add(list, node);
+        printf("(%d, %d)\n", node -> x, node -> y);
+
+        if (node -> x == grid.ex && node -> y == grid.ey) {
+            printf("G\n");
+            printf("Path:\n");
+            for (int i = 0; i < list -> size; i++) printf("(%d, %d) ", list -> data[i] -> x, list -> data[i] -> y);
+            break;
+        }
+
+        int x = node -> x, y = node -> y;
+
+        // left
+        if (x > grid.left && !grid.walls[x - 1][y] && !closed_list_contains(list, x - 1, y)) heap_insert_or_update(
+            heap,
+            x - 1,
+            y,
+            node -> g + 1,
+            abs(x - 1 - grid.ex) + abs(y - grid.ey)
+        );
+
+        // right
+        if (x < grid.right && !grid.walls[x + 1][y] && !closed_list_contains(list, x + 1, y)) heap_insert_or_update(
+            heap,
+            x + 1,
+            y,
+            node -> g + 1,
+            abs(x + 1 - grid.ex) + abs(y - grid.ey)
+        );
+        
+        // top
+        if (y < grid.top && !grid.walls[x][y + 1] && !closed_list_contains(list, x, y + 1)) heap_insert_or_update(
+            heap,
+            x,
+            y + 1,
+            node -> g + 1,
+            abs(x - grid.ex) + abs(y + 1 - grid.ey)
+        );
+
+        // bottom
+        if (y < grid.bottom && !grid.walls[x][y - 1] && !closed_list_contains(list, x, y - 1)) heap_insert_or_update(
+            heap,
+            x,
+            y - 1,
+            node -> g + 1,
+            abs(x - grid.ex) + abs(y - 1 - grid.ey)
+        );
+
+        if (debug) print_heap(heap, 0, 0);
+
+        if (heap_is_empty(heap)) {
+            printf("F\n");
+            break;
+        } else printf("P\n");
+    }
+
+    heap_free(heap);
+    closed_list_free(list);
 }
 
 int main(int argc, char **argv) {
+    if (argc == 2 && strcmp(argv[1], "--debug") == 0) debug = 1;
+
     Grid grid = generateGrid();
-    search(grid);
+    pathfind(grid);
 
     for (int i = 0; i < grid.width; i++) free(grid.walls[i]);
     free(grid.walls);
