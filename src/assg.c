@@ -235,6 +235,15 @@ Grid generateGrid() {
     };
 }
 
+void printGrid(Grid grid) {
+    for (int y = grid.height - 1; y >= 0; y--) {
+        for (int x = 0; x < grid.width; x++) {
+            printf(grid.walls[x][y] ? "\u2588" : "\u2591");
+        }
+        printf("\n");
+    }
+}
+
 bool is_wall(Grid grid, int x, int y) {
     bool ret = grid.walls[x - grid.left][y - grid.bottom];
     return ret;
@@ -303,13 +312,22 @@ void pathfind(Grid grid) {
         );
 
         // bottom
-        if (y < grid.bottom && !is_wall(grid, x, y - 1) && !closed_list_contains(list, x, y - 1)) heap_insert_or_update(
+        if (y > grid.bottom && !is_wall(grid, x, y - 1) && !closed_list_contains(list, x, y - 1)) heap_insert_or_update(
             heap,
             x,
             y - 1,
             node -> g + 1,
             abs(x - grid.ex) + abs(y - 1 - grid.ey)
         );
+
+        if (debug) {
+            printf("Heap:\n");
+            print_heap(heap, 0, 0);
+            printf("List:\n");
+            for (int i = 0; i < list -> size; i++) {
+                printf("(%d, %d)\n", list -> data[i] -> x, list -> data[i] -> y);
+            }
+        }
 
         if (heap_is_empty(heap)) {
             printf("F\n");
@@ -322,7 +340,10 @@ void pathfind(Grid grid) {
 }
 
 int main(int argc, char **argv) {
+    if (argc == 2 && strcmp(argv[1], "--debug") == 0) debug = 1;
+
     Grid grid = generateGrid();
+    if (debug) printGrid(grid);
     pathfind(grid);
 
     for (int i = 0; i < grid.width; i++) free(grid.walls[i]);
