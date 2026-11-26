@@ -4,13 +4,13 @@
 #include <string.h>
 #include "assg.h"
 
-#define HEAP_CAPACITY 100
-#define MAX_WALLS 10000
+#define CAPACITY 100
 
 int debug = 0;
 
 typedef struct _grid {
-    int **walls;
+    int *wallsX, *wallsY, *wallsW, *wallsH;
+    int numWalls;
     int left, right, top, bottom, width, height;
     int sx, sy;
     int ex, ey;
@@ -55,9 +55,9 @@ Node *create_node(int x, int y, int g, int h, Node *parent) {
 }
 
 void heap_init(MinHeap *heap) {
-    heap -> data = (Node**)malloc(HEAP_CAPACITY * sizeof(Node*));
+    heap -> data = (Node**)malloc(CAPACITY * sizeof(Node*));
     heap -> size = 0;
-    heap -> capacity = HEAP_CAPACITY;
+    heap -> capacity = CAPACITY;
 }
 
 void heapify_up(MinHeap *heap, int i) {
@@ -153,8 +153,8 @@ void print_heap(MinHeap *heap, int index, unsigned int depth) {
 }
 
 void closed_list_init(ClosedList *list) {
-    list -> data = (Node**)malloc(HEAP_CAPACITY * sizeof(Node*));
-    list -> capacity = HEAP_CAPACITY;
+    list -> data = (Node**)malloc(CAPACITY * sizeof(Node*));
+    list -> capacity = CAPACITY;
     list -> size = 0;
 }
 
@@ -196,11 +196,21 @@ Grid generateGrid() {
     int minY = sy < ey ? sy : ey;
     int maxY = sy > ey ? sy : ey;
 
+    int cap = CAPACITY;
     int wallsCount;
-    int wallsX[MAX_WALLS], wallsY[MAX_WALLS], wallsW[MAX_WALLS], wallsH[MAX_WALLS];
+    int *wallsX = (int*)calloc(cap, sizeof(int)), *wallsY = (int*)calloc(cap, sizeof(int));
+    int *wallsW = (int*)calloc(cap, sizeof(int)), *wallsH = (int*)calloc(cap, sizeof(int));
     printf("Walls:\n");
     int x, y, w, h;
     for (wallsCount = 0; scanf(" (%d, %d), %d, %d", &x, &y, &w, &h); wallsCount++) {
+        if (wallsCount > cap) {
+            cap += 100;
+            wallsX = (int*)realloc(wallsX, cap * sizeof(int));
+            wallsY = (int*)realloc(wallsY, cap * sizeof(int));
+            wallsW = (int*)realloc(wallsX, cap * sizeof(int));
+            wallsH = (int*)realloc(wallsY, cap * sizeof(int));
+        }
+
         wallsX[wallsCount] = x;
         wallsY[wallsCount] = y;
         wallsW[wallsCount] = w;
@@ -213,21 +223,12 @@ Grid generateGrid() {
     }
 
     int gridWidth = maxX - minX + 1, gridHeight = maxY - minY + 1;
-    int **grid = (int**)malloc(gridWidth * sizeof(int*));
-    for (int i = 0; i < gridWidth; i++) grid[i] = (int*)calloc(gridHeight, sizeof(int));
-
-    for (int c = 0; c < wallsCount; c++) {
-        for (int i = wallsX[c]; i < wallsX[c] + wallsW[c]; i++) {
-            for (int j = wallsY[c]; j < wallsY[c] + wallsH[c]; j++) {
-                grid[i - minX][j - minY] = 1;
-            }
-        }
-    }
 
     printf("SW Corner:\n(%d, %d), %d, %d\n", minX, minY, gridWidth, gridHeight);
 
     return (Grid){
-        .walls = grid,
+        .wallsX = wallsX, .wallsY = wallsY, .wallsW = wallsW, .wallsH = wallsH,
+        .numWalls = wallsCount,
         .left = minX, .right = maxX, .bottom = minY, .top = maxY,
         .width = gridWidth, .height = gridHeight,
         .sx = sx, .sy = sy,
@@ -235,18 +236,15 @@ Grid generateGrid() {
     };
 }
 
-void printGrid(Grid grid) {
-    for (int y = grid.height - 1; y >= 0; y--) {
-        for (int x = 0; x < grid.width; x++) {
-            printf(grid.walls[x][y] ? "\u2588" : "\u2591");
-        }
-        printf("\n");
-    }
-}
-
 bool is_wall(Grid grid, int x, int y) {
-    bool ret = grid.walls[x - grid.left][y - grid.bottom];
-    return ret;
+    for (int i = 0; i < grid.numWalls; i++) {
+        if (
+            x >= grid.wallsX[i] && x < grid.wallsX[i] + grid.wallsW[i] &&
+            y >= grid.wallsY[i] && y < grid.wallsY[i] + grid.wallsH[i]
+        ) return true;
+    }
+
+    return false;
 }
 
 void heap_insert_or_update(MinHeap *heap, int x, int y, int g, int h) {
@@ -343,9 +341,10 @@ int main(int argc, char **argv) {
     if (argc == 2 && strcmp(argv[1], "--debug") == 0) debug = 1;
 
     Grid grid = generateGrid();
-    if (debug) printGrid(grid);
     pathfind(grid);
 
-    for (int i = 0; i < grid.width; i++) free(grid.walls[i]);
-    free(grid.walls);
+    free(grid.wallsX);
+    free(grid.wallsY);
+    free(grid.wallsW);
+    free(grid.wallsH);
 }
