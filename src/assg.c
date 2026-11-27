@@ -8,6 +8,8 @@
 
 int debug = 0;
 
+int hmax;
+
 typedef struct _grid {
     int *wallsX, *wallsY, *wallsW, *wallsH;
     int numWalls;
@@ -16,11 +18,19 @@ typedef struct _grid {
     int ex, ey;
 } Grid;
 
+int nodeW(Node *node) {
+    return (int)((double)5 - 4 * (double)(node -> h) / hmax);
+}
+
+int nodeF(Node *node) {
+    return node -> g + nodeW(node) * node -> h;
+}
+
 int compare_nodes(MinHeap *heap, int index1, int index2) {
     // Returns 1 if node A has priority, 0 if node B has priority.
     Node *a = heap -> data[index1], *b = heap -> data[index2];
 
-    int af = (a -> g) + (a -> h), bf = (b -> g) + (b -> h);
+    int af = nodeF(a), bf = nodeF(b);
 
     if (af != bf) return af < bf;
     else if (a -> h != b -> h) return a -> h < b -> h;
@@ -236,6 +246,16 @@ Grid generateGrid() {
     };
 }
 
+int getHMax(Grid grid) {
+    int left, right, top, bottom;
+    left = abs(grid.ex - grid.left);
+    right = abs(grid.ex - grid.right);
+    top = abs(grid.ey - grid.top);
+    bottom = abs(grid.ey - grid.bottom);
+
+    return (left > right ? left : right) + (top > bottom ? top : bottom);
+}
+
 bool is_wall(Grid grid, int x, int y) {
     for (int i = 0; i < grid.numWalls; i++) {
         if (
@@ -341,6 +361,7 @@ int main(int argc, char **argv) {
     if (argc == 2 && strcmp(argv[1], "--debug") == 0) debug = 1;
 
     Grid grid = generateGrid();
+    hmax = getHMax(grid);
     pathfind(grid);
 
     free(grid.wallsX);
